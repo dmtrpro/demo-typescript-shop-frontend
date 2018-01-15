@@ -523,6 +523,9 @@ $(function () {
     cartCounter.hideOnNull = true;
     cartCounter.attach('#cart-counter', true);
     cartTotal.attach('#cart-total', true);
+    $('.categories').on('click', '.categories-single', function (e) {
+        $(this).toggleClass('active');
+    });
 });
 
 
