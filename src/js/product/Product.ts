@@ -19,14 +19,7 @@ export class ProductCollection extends BaseCollection {
         this.class = 'products-list';
     }
 
-    public attach(selector: JQuery.Selector, replace: boolean = false): this {
-        super.attach(selector, replace);
-        this.bindCartEvent();
-
-        return this;
-    }
-
-    private bindCartEvent(){
+    protected bindEvents(){
         this.el.on('click', '.add-cart-item', function (e: any) {
             cartManager.addItem(e.target.dataset.id);
         });

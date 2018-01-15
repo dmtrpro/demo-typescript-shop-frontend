@@ -20,7 +20,7 @@ export class BaseItem {
     public key: string = '';
 
     protected tagName: JQuery.Selector = '<div/>';
-    public el: JQuery;
+    protected el: JQuery;
 
     /**
      * Конструктор
@@ -147,10 +147,17 @@ export class BaseItem {
             this.el.appendTo(selector);
         }
 
+        this.bindEvents();
+
         this.render();
 
         return this;
     }
+
+    /**
+     * Хелпер для биндинга событий к элементу
+     */
+    protected bindEvents() {}
 
     /**
      * Удаляем элемент из DOM

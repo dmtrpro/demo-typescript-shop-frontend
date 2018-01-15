@@ -60,8 +60,7 @@ export class Submenu extends MenuItem {
     public render() {
         super.render();
 
-        this.el.append(this.child.el);
-        this.child.render();
+        this.el.append(this.child.render());
         return this.el;
     }
 }

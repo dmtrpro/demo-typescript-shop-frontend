@@ -198,9 +198,14 @@ var BaseItem = /** @class */ (function () {
         else {
             this.el.appendTo(selector);
         }
+        this.bindEvents();
         this.render();
         return this;
     };
+    /**
+     * Хелпер для биндинга событий к элементу
+     */
+    BaseItem.prototype.bindEvents = function () { };
     /**
      * Удаляем элемент из DOM
      * @returns {BaseItem}
@@ -230,157 +235,6 @@ module.exports = jQuery;
 
 /***/ }),
 /* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-var $ = __webpack_require__(1);
-var CartManager = /** @class */ (function () {
-    function CartManager() {
-        this.items = {};
-        this.ajaxUrl = 'json/products.json';
-        this.sum = 0;
-        this.handlers = {
-            add: [],
-            remove: [],
-            calculate: [],
-        };
-    }
-    CartManager.prototype.addHandler = function (type, fun) {
-        this.handlers[type].push(fun);
-    };
-    Object.defineProperty(CartManager.prototype, "products", {
-        get: function () {
-            return this.items;
-        },
-        set: function (items) {
-            this.addItems(items);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    CartManager.prototype.addItems = function (items) {
-        this.items = __assign({}, this.items, items);
-        this.onAdd();
-    };
-    CartManager.prototype.addItem = function (itemKey) {
-        if (this.items[itemKey]) {
-            this.items[itemKey].amount++;
-            this.onAdd();
-        }
-        else {
-            this.items[itemKey] = { amount: 1 };
-            this.getItemData(itemKey);
-        }
-    };
-    CartManager.prototype.removeItem = function (itemKey) {
-        if (this.items[itemKey]) {
-            delete this.items[itemKey];
-        }
-        this.onRemove();
-    };
-    /**
-     * Получаем с бэка данные о товаре
-     * @param {string} productId
-     * @param {boolean} useStub Использовать заглушку?
-     */
-    CartManager.prototype.getItemData = function (productId, useStub) {
-        if (useStub === void 0) { useStub = true; }
-        var result;
-        var settings = {
-            method: "GET",
-            context: this,
-            url: this.ajaxUrl,
-            data: { product: productId }
-        };
-        result = $.ajax(settings);
-        if (useStub) {
-            return result.done(function (data) {
-                var productData = {};
-                for (var key in data.items) {
-                    if (data.items[key].productId == productId) {
-                        productData = data.items[key];
-                        break;
-                    }
-                }
-                this.setItemData(productId, productData);
-            });
-        }
-        return result.done(function (data) {
-            this.setItemData(productId, data.data);
-        });
-    };
-    CartManager.prototype.setItemData = function (itemKey, data) {
-        this.items[itemKey].data = data;
-        this.onAdd();
-    };
-    CartManager.prototype.calculateSum = function () {
-        this.sum = 0;
-        for (var key in this.items) {
-            if (this.items[key].data) {
-                this.sum += this.items[key].data.price * this.items[key].amount;
-            }
-            else {
-                this.getItemData(key);
-                break;
-            }
-        }
-        this.onCalculate();
-        return this.sum;
-    };
-    CartManager.prototype.toString = function () {
-        var str = '';
-        for (var key in this.items) {
-            str += key + ':' + this.items[key].amount + ';';
-        }
-        return str;
-    };
-    CartManager.prototype.serialize = function () {
-        return this.toString();
-    };
-    CartManager.prototype.unserialize = function (str) {
-        var items = str.split(';');
-        var result = {};
-        items.map(function (item) {
-            var i = item.split(':');
-            result[i[0]].amount = parseInt(i[1]);
-        });
-        this.addItems(result);
-        return this.items;
-    };
-    CartManager.prototype.onAdd = function () {
-        var _this = this;
-        this.calculateSum();
-        //console.log(this.items);
-        this.handlers.add.forEach(function (fun) { return fun(_this.items); });
-    };
-    CartManager.prototype.onRemove = function () {
-        var _this = this;
-        this.calculateSum();
-        //console.log(this.items);
-        this.handlers.remove.forEach(function (fun) { return fun(_this.items); });
-    };
-    CartManager.prototype.onCalculate = function () {
-        //console.log(this.items);
-        var _this = this;
-        this.handlers.calculate.forEach(function (fun) { return fun(_this.items); });
-    };
-    return CartManager;
-}());
-exports.cartManager = new CartManager();
-
-
-/***/ }),
-/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -490,6 +344,166 @@ exports.BaseCollection = BaseCollection;
 
 
 /***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var $ = __webpack_require__(1);
+var CartManager = /** @class */ (function () {
+    function CartManager() {
+        this.items = {};
+        this.ajaxUrl = 'json/products.json';
+        this.sum = 0;
+        this.amount = 0;
+        this.handlers = {
+            add: [],
+            remove: [],
+            calculate: [],
+        };
+    }
+    CartManager.prototype.addHandler = function (type, fun) {
+        this.handlers[type].push(fun);
+    };
+    Object.defineProperty(CartManager.prototype, "products", {
+        get: function () {
+            return this.items;
+        },
+        set: function (items) {
+            this.addItems(items);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    CartManager.prototype.addItems = function (items) {
+        this.items = __assign({}, this.items, items);
+        this.onAdd();
+    };
+    CartManager.prototype.addItem = function (itemKey) {
+        if (this.items[itemKey]) {
+            this.items[itemKey].amount++;
+            this.onAdd();
+        }
+        else {
+            this.items[itemKey] = { amount: 1 };
+            this.getItemData(itemKey);
+        }
+    };
+    CartManager.prototype.removeItem = function (itemKey) {
+        if (this.items[itemKey]) {
+            delete this.items[itemKey];
+        }
+        this.onRemove();
+    };
+    /**
+     * Получаем с бэка данные о товаре
+     * @param {string} productId
+     * @param {boolean} useStub Использовать заглушку?
+     */
+    CartManager.prototype.getItemData = function (productId, useStub) {
+        if (useStub === void 0) { useStub = true; }
+        var result;
+        var settings = {
+            method: "GET",
+            context: this,
+            url: this.ajaxUrl,
+            data: { product: productId }
+        };
+        result = $.ajax(settings);
+        if (useStub) {
+            return result.done(function (data) {
+                var productData = {};
+                for (var key in data.items) {
+                    if (data.items[key].productId == productId) {
+                        productData = data.items[key];
+                        break;
+                    }
+                }
+                this.setItemData(productId, productData);
+            });
+        }
+        return result.done(function (data) {
+            this.setItemData(productId, data.data);
+        });
+    };
+    CartManager.prototype.setItemData = function (itemKey, data) {
+        this.items[itemKey].data = data;
+        this.onAdd();
+    };
+    CartManager.prototype.calculateSum = function () {
+        this.sum = 0;
+        for (var key in this.items) {
+            if (this.items[key].data) {
+                this.sum += this.items[key].data.price * this.items[key].amount;
+            }
+            else {
+                this.getItemData(key);
+                break;
+            }
+        }
+        this.onCalculate();
+        return this.sum;
+    };
+    CartManager.prototype.calculateAmount = function () {
+        this.amount = 0;
+        for (var key in this.items) {
+            this.amount += this.items[key].amount;
+        }
+        return this.amount;
+    };
+    CartManager.prototype.toString = function () {
+        var str = '';
+        for (var key in this.items) {
+            str += key + ':' + this.items[key].amount + ';';
+        }
+        return str;
+    };
+    CartManager.prototype.serialize = function () {
+        return this.toString();
+    };
+    CartManager.prototype.unserialize = function (str) {
+        var items = str.split(';');
+        var result = {};
+        items.map(function (item) {
+            var i = item.split(':');
+            result[i[0]].amount = parseInt(i[1]);
+        });
+        this.addItems(result);
+        return this.items;
+    };
+    CartManager.prototype.onAdd = function () {
+        var _this = this;
+        this.calculateSum();
+        //console.log(this.items);
+        this.handlers.add.forEach(function (fun) { return fun(_this.items); });
+    };
+    CartManager.prototype.onRemove = function () {
+        var _this = this;
+        this.calculateSum();
+        //console.log(this.items);
+        this.handlers.remove.forEach(function (fun) { return fun(_this.items); });
+    };
+    CartManager.prototype.onCalculate = function () {
+        var _this = this;
+        this.calculateAmount();
+        //console.log(this.items);
+        this.handlers.calculate.forEach(function (fun) { return fun(_this.items); });
+    };
+    return CartManager;
+}());
+exports.cartManager = new CartManager();
+
+
+/***/ }),
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -499,18 +513,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Product_1 = __webpack_require__(5);
 var $ = __webpack_require__(1);
 var Cart_1 = __webpack_require__(7);
-var CartManager_1 = __webpack_require__(2);
 $(function () {
     var item = new Product_1.ProductCollection();
     var cart = new Cart_1.Cart();
+    var cartTotal = new Cart_1.CartSumCounter();
+    var cartCounter = new Cart_1.CartAmountCounter();
     item.attach('#products-list', true);
     cart.attach('#main-cart', true);
-    var total = $('#cart-total');
-    total.text(0);
-    CartManager_1.cartManager.addHandler('calculate', function () { return total.text(CartManager_1.cartManager.sum); });
-    $('.categories').on('click', '.categories-single', function (e) {
-        $(this).toggleClass('active');
-    });
+    cartCounter.hideOnNull = true;
+    cartCounter.attach('#cart-counter', true);
+    cartTotal.attach('#cart-total', true);
 });
 
 
@@ -532,8 +544,8 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var BaseItem_1 = __webpack_require__(0);
-var BaseCollection_1 = __webpack_require__(3);
-var CartManager_1 = __webpack_require__(2);
+var BaseCollection_1 = __webpack_require__(2);
+var CartManager_1 = __webpack_require__(3);
 var ProductCollection = /** @class */ (function (_super) {
     __extends(ProductCollection, _super);
     function ProductCollection(params) {
@@ -549,13 +561,7 @@ var ProductCollection = /** @class */ (function (_super) {
     ProductCollection.prototype._init = function (params) {
         this.class = 'products-list';
     };
-    ProductCollection.prototype.attach = function (selector, replace) {
-        if (replace === void 0) { replace = false; }
-        _super.prototype.attach.call(this, selector, replace);
-        this.bindCartEvent();
-        return this;
-    };
-    ProductCollection.prototype.bindCartEvent = function () {
+    ProductCollection.prototype.bindEvents = function () {
         this.el.on('click', '.add-cart-item', function (e) {
             CartManager_1.cartManager.addItem(e.target.dataset.id);
         });
@@ -726,8 +732,8 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var BaseItem_1 = __webpack_require__(0);
-var BaseCollection_1 = __webpack_require__(3);
-var CartManager_1 = __webpack_require__(2);
+var BaseCollection_1 = __webpack_require__(2);
+var CartManager_1 = __webpack_require__(3);
 var Cart = /** @class */ (function (_super) {
     __extends(Cart, _super);
     function Cart(params) {
@@ -748,16 +754,10 @@ var Cart = /** @class */ (function (_super) {
             this._renderChild(child);
         }
     };
-    Cart.prototype.attach = function (selector, replace) {
-        if (replace === void 0) { replace = false; }
-        _super.prototype.attach.call(this, selector, replace);
-        this.bindCartEvent();
-        return this;
-    };
     Cart.prototype.createChild = function (params) {
         return new CartItem(params);
     };
-    Cart.prototype.bindCartEvent = function () {
+    Cart.prototype.bindEvents = function () {
         this.el.on('click', '.delete-cart-item', function (e) {
             CartManager_1.cartManager.removeItem(e.currentTarget.dataset.id);
         });
@@ -793,6 +793,45 @@ var CartItem = /** @class */ (function (_super) {
     return CartItem;
 }(BaseItem_1.BaseItem));
 exports.CartItem = CartItem;
+var CartSumCounter = /** @class */ (function (_super) {
+    __extends(CartSumCounter, _super);
+    function CartSumCounter() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.hideOnNull = false;
+        return _this;
+    }
+    CartSumCounter.prototype.bindEvents = function () {
+        CartManager_1.cartManager.addHandler('calculate', this.render.bind(this));
+    };
+    CartSumCounter.prototype.template = function () {
+        var sum = CartManager_1.cartManager.sum;
+        if (sum == 0 && this.hideOnNull) {
+            this.el.hide();
+            return '';
+        }
+        this.el.show();
+        return sum.toString();
+    };
+    return CartSumCounter;
+}(BaseItem_1.BaseItem));
+exports.CartSumCounter = CartSumCounter;
+var CartAmountCounter = /** @class */ (function (_super) {
+    __extends(CartAmountCounter, _super);
+    function CartAmountCounter() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    CartAmountCounter.prototype.template = function () {
+        var amount = CartManager_1.cartManager.amount;
+        if (amount == 0 && this.hideOnNull) {
+            this.el.hide();
+            return '';
+        }
+        this.el.show();
+        return amount.toString();
+    };
+    return CartAmountCounter;
+}(CartSumCounter));
+exports.CartAmountCounter = CartAmountCounter;
 
 
 /***/ })

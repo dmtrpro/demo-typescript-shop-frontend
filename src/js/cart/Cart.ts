@@ -27,18 +27,11 @@ export class Cart extends BaseCollection {
         }
     }
 
-    public attach(selector: JQuery.Selector, replace: boolean = false): this {
-        super.attach(selector, replace);
-        this.bindCartEvent();
-
-        return this;
-    }
-
     protected createChild(params: BaseItemParams): BaseItem {
         return new CartItem(params);
     }
 
-    private bindCartEvent() {
+    protected bindEvents() {
         this.el.on('click', '.delete-cart-item', function (e: any) {
             cartManager.removeItem(e.currentTarget.dataset.id);
         });
@@ -58,7 +51,7 @@ export class CartItem extends BaseItem {
         return 'product.html?product=' + this.get('slug');
     }
 
-    template() {
+    protected template() {
         return '<a href="'+ this.getLink() +'"><img class="cart-item__img" src="' + this.get('thumb') + '" alt="' + this.get('title') + '" height="85"></a>\n' +
             '<div class="cart-item__text">' +
                 '<a class="cart-item__head" href="'+ this.getLink() +'">' + this.get('title') + '</a>' +
@@ -68,5 +61,39 @@ export class CartItem extends BaseItem {
                 '</div>\n' +
             '</div>' +
             '<a class="cart-item__delete delete-cart-item" data-id="' + this.get('productId') + '" href="#item-delete"><i class="fa fa-times-circle"></i></a>\n';
+    }
+}
+
+export class CartSumCounter extends BaseItem {
+    public hideOnNull: boolean = false;
+
+    protected bindEvents() {
+        cartManager.addHandler('calculate', this.render.bind(this));
+    }
+
+    protected template() {
+        let sum = cartManager.sum;
+
+        if(sum == 0 && this.hideOnNull){
+            this.el.hide();
+            return '';
+        }
+
+        this.el.show();
+        return sum.toString();
+    }
+}
+
+export class CartAmountCounter extends CartSumCounter {
+    protected template() {
+        let amount = cartManager.amount;
+
+        if(amount == 0 && this.hideOnNull){
+            this.el.hide();
+            return '';
+        }
+
+        this.el.show();
+        return amount.toString();
     }
 }

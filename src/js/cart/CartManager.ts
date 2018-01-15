@@ -11,6 +11,7 @@ class CartManager {
     protected items: cartItems = {};
     protected ajaxUrl = 'json/products.json';
     public sum: number = 0;
+    public amount: number = 0;
 
     protected handlers: {
         [key: string]: Array<(data: cartItems) => void>
@@ -113,6 +114,15 @@ class CartManager {
         return this.sum;
     }
 
+    public calculateAmount(): number {
+        this.amount = 0;
+        for (let key in this.items) {
+            this.amount += this.items[key].amount
+        }
+
+        return this.amount;
+    }
+
     public toString() {
         let str = '';
         for (let key in this.items) {
@@ -141,6 +151,7 @@ class CartManager {
 
     public onAdd() {
         this.calculateSum();
+
         //console.log(this.items);
 
         this.handlers.add.forEach((fun) => fun(this.items));
@@ -148,12 +159,14 @@ class CartManager {
 
     public onRemove() {
         this.calculateSum();
+
         //console.log(this.items);
 
         this.handlers.remove.forEach((fun) => fun(this.items));
     }
 
     public onCalculate() {
+        this.calculateAmount();
         //console.log(this.items);
 
         this.handlers.calculate.forEach((fun) => fun(this.items));
